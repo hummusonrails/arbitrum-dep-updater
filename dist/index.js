@@ -69526,11 +69526,16 @@ async function scanForUpdates(rootDir, rustDeps, jsDeps, checkFoundry, token) {
     core.info(`  Scanning ${relPath}...`);
     const deps = parseCargoToml(file, rustDeps);
 
+    // Cache latest versions per crate to avoid duplicate lookups and summary lines
+    const latestCache = {};
     for (const [key, info] of Object.entries(deps)) {
       try {
-        const latest = await getLatestCrateVersion(info.depName);
+        if (!(info.depName in latestCache)) {
+          latestCache[info.depName] = await getLatestCrateVersion(info.depName);
+        }
+        const latest = latestCache[info.depName];
         if (isNewer(info.version, latest)) {
-          core.info(`    ${info.depName}: ${info.version} → ${latest}`);
+          core.info(`    ${info.depName} (${info.section}): ${info.version} → ${latest}`);
           updates.push({
             type: 'cargo', file, relPath,
             depName: info.depName, section: info.section,
@@ -69696,8 +69701,19 @@ function parseList(input) {
   return input.split(',').map(s => s.trim()).filter(Boolean);
 }
 
+function deduplicateUpdates(updates) {
+  const seen = new Set();
+  return updates.filter(u => {
+    const key = `${u.depName}|${u.relPath}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function buildSummaryTable(updates) {
-  const lines = updates.map(u =>
+  const unique = deduplicateUpdates(updates);
+  const lines = unique.map(u =>
     `| ${u.depName} | ${u.oldVersion} | ${u.newVersion} | ${u.relPath} |`
   );
   return [
@@ -69708,18 +69724,20 @@ function buildSummaryTable(updates) {
 }
 
 function buildCommitMessage(updates, branch) {
+  const unique = deduplicateUpdates(updates);
   const lines = [`chore(deps): update Arbitrum dependencies (${branch})\n`];
   lines.push('Updated dependencies:');
-  for (const update of updates) {
+  for (const update of unique) {
     lines.push(`  - ${update.depName}: ${update.oldVersion} → ${update.newVersion}`);
   }
   return lines.join('\n');
 }
 
 function buildPrBody(updates, summary, branch) {
-  const rustUpdates = updates.filter(u => u.type === 'cargo');
-  const jsUpdates = updates.filter(u => u.type === 'package-json');
-  const foundryUpdates = updates.filter(u => u.type === 'foundry' || u.type === 'forge-std');
+  const unique = deduplicateUpdates(updates);
+  const rustUpdates = unique.filter(u => u.type === 'cargo');
+  const jsUpdates = unique.filter(u => u.type === 'package-json');
+  const foundryUpdates = unique.filter(u => u.type === 'foundry' || u.type === 'forge-std');
 
   const sections = [];
 

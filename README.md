@@ -67,6 +67,8 @@ jobs:
 
 That's it. The action will open a PR whenever updates are available.
 
+> **Required repo setting:** Go to **Settings > Actions > General > Workflow permissions** and enable **"Allow GitHub Actions to create and approve pull requests"**. Without this, the action can detect and commit updates but cannot open PRs.
+
 ## Inputs
 
 | Input | Description | Default |
