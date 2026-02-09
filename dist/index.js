@@ -69419,7 +69419,7 @@ const {
 async function run() {
   try {
     const token = core.getInput('token', { required: true });
-    const branches = parseList(core.getInput('branches')) || ['main'];
+    const branchesInput = parseList(core.getInput('branches'));
     const createPr = core.getBooleanInput('create-pr');
     const dryRun = core.getBooleanInput('dry-run');
 
@@ -69433,6 +69433,16 @@ async function run() {
     const allJsDeps = [...new Set([...jsDeps, ...extraJsDeps])];
 
     const rootDir = process.env.GITHUB_WORKSPACE || process.cwd();
+
+    // Auto-detect default branch if none specified
+    let branches = branchesInput;
+    if (!branches) {
+      const octokit = github.getOctokit(token);
+      const { owner, repo } = github.context.repo;
+      const { data: repoData } = await octokit.rest.repos.get({ owner, repo });
+      branches = [repoData.default_branch];
+      core.info(`No branches specified, auto-detected default branch: ${repoData.default_branch}`);
+    }
 
     core.info('=== Arbitrum Dependency Updater ===');
     core.info(`Root directory: ${rootDir}`);

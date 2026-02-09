@@ -12,9 +12,9 @@ inputs:
     required: true
     default: ${{ github.token }}
   branches:
-    description: 'Comma-separated list of branches to check and open PRs against'
+    description: 'Comma-separated list of branches to check and open PRs against (auto-detects default branch if not set)'
     required: false
-    default: 'main'
+    default: ''
   create-pr:
     description: 'Create a pull request with updates (true/false)'
     required: false

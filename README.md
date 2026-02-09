@@ -74,7 +74,7 @@ That's it. The action will open a PR whenever updates are available.
 | Input | Description | Default |
 |:------|:------------|:--------|
 | `token` | GitHub token for creating branches and PRs | `${{ github.token }}` |
-| `branches` | Comma-separated branches to check and open PRs against | `main` |
+| `branches` | Comma-separated branches to check and open PRs against | *(auto-detects default branch)* |
 | `create-pr` | Create a pull request with updates | `true` |
 | `dry-run` | Only check for updates, don't modify files | `false` |
 | `rust-deps` | Comma-separated Rust deps to track (overrides defaults) | *(built-in list)* |
@@ -137,7 +137,7 @@ Opens a separate PR per branch that has outdated dependencies.
 
 ## How it works
 
-1. For each configured branch, checks out the branch
+1. Auto-detects the repo's default branch (works with both `main` and `master`), or uses your configured list
 2. Scans the repo for `Cargo.toml`, `package.json`, and `foundry.toml` files
 3. Extracts versions of tracked Arbitrum-ecosystem dependencies
 4. Queries crates.io, npm, and GitHub for the latest versions
