@@ -69672,15 +69672,39 @@ async function createPullRequest(token, rootDir, targetBranch, updates, summary)
 
   core.info(`Creating PR: ${branchName} → ${targetBranch}`);
 
+  const octokit = github.getOctokit(token);
+  const { owner, repo } = github.context.repo;
+
+  // Delete existing remote branch if a previous run created one today
+  try {
+    await octokit.rest.git.getRef({ owner, repo, ref: `heads/${branchName}` });
+    core.info(`Branch '${branchName}' already exists remotely, deleting it...`);
+    await octokit.rest.git.deleteRef({ owner, repo, ref: `heads/${branchName}` });
+  } catch (e) {
+    // 404 means branch doesn't exist, which is the happy path
+  }
+
+  // Close any existing open PR for this branch so we don't create duplicates
+  try {
+    const { data: existingPrs } = await octokit.rest.pulls.list({
+      owner, repo, head: `${owner}:${branchName}`, state: 'open',
+    });
+    for (const pr of existingPrs) {
+      core.info(`Closing stale PR #${pr.number}...`);
+      await octokit.rest.pulls.update({
+        owner, repo, pull_number: pr.number, state: 'closed',
+      });
+    }
+  } catch (e) {
+    // Non-fatal, continue
+  }
+
   await exec.exec('git', ['checkout', '-b', branchName]);
   await exec.exec('git', ['add', '-A']);
 
   const commitMsg = buildCommitMessage(updates, targetBranch);
   await exec.exec('git', ['commit', '-m', commitMsg]);
   await exec.exec('git', ['push', '--set-upstream', 'origin', branchName]);
-
-  const octokit = github.getOctokit(token);
-  const { owner, repo } = github.context.repo;
 
   const prBody = buildPrBody(updates, summary, targetBranch);
   const pr = await octokit.rest.pulls.create({
