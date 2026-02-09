@@ -1,0 +1,61 @@
+name: 'Arbitrum Dependency Updater'
+description: 'Automatically check and update Arbitrum-specific dependencies (Stylus, viem, Foundry, etc.) and open a PR'
+author: 'Ben Greenberg'
+
+branding:
+  icon: 'package'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'GitHub token for creating branches and PRs'
+    required: true
+    default: ${{ github.token }}
+  branches:
+    description: 'Comma-separated list of branches to check and open PRs against'
+    required: false
+    default: 'main'
+  create-pr:
+    description: 'Create a pull request with updates (true/false)'
+    required: false
+    default: 'true'
+  dry-run:
+    description: 'Only check for updates without modifying files (true/false)'
+    required: false
+    default: 'false'
+  rust-deps:
+    description: 'Comma-separated list of Rust crate dependencies to track (overrides defaults)'
+    required: false
+    default: ''
+  js-deps:
+    description: 'Comma-separated list of npm package dependencies to track (overrides defaults)'
+    required: false
+    default: ''
+  extra-rust-deps:
+    description: 'Additional Rust crate dependencies to track (added to defaults)'
+    required: false
+    default: ''
+  extra-js-deps:
+    description: 'Additional npm package dependencies to track (added to defaults)'
+    required: false
+    default: ''
+  check-foundry:
+    description: 'Check Foundry/Solidity dependencies like solc version and forge-std (true/false)'
+    required: false
+    default: 'true'
+
+outputs:
+  updates-available:
+    description: 'Whether any updates were found (true/false)'
+  update-count:
+    description: 'Number of dependency updates found'
+  summary:
+    description: 'Markdown table summarizing available updates'
+  pr-urls:
+    description: 'JSON array of created PR URLs (one per branch with updates)'
+  pr-numbers:
+    description: 'JSON array of created PR numbers (one per branch with updates)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

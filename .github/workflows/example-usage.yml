@@ -1,0 +1,37 @@
+# Example: Add this workflow to any Arbitrum workshop or dApp repo
+# to automatically check for dependency updates every Monday.
+#
+# Save as .github/workflows/arbitrum-dep-update.yml in your repo.
+
+name: Arbitrum Dependency Update
+
+on:
+  schedule:
+    # Runs every Monday at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check and update Arbitrum dependencies
+        uses: hummusonrails/arbitrum-dep-updater@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branches: main
+          create-pr: true
+          check-foundry: true
+          # Check multiple branches:
+          # branches: 'main,develop,workshop-v2'
+          # Optionally add extra deps beyond the Arbitrum defaults:
+          # extra-rust-deps: 'mini-alloc,tokio'
+          # extra-js-deps: 'ethers,@rainbow-me/rainbowkit'
